@@ -1,28 +1,18 @@
-var net = require('net')
-	,	rl = require('readline')
-	, readline_interface = rl.createInterface(process.stdin, process.stdout)
-	, username = 'Mami'
-	,	client = 0;
+var net = require('net'), connections = [];
 
-console.log("Please enter your name");
-	
-readline_interface.on('line', function(line) {
-  if(client) { client.write(username + ' says: ' + line); } else { username = line; connect(); }
-	readline_interface.setPrompt(username, username.length + 1);
-  readline_interface.prompt();
-}).on('close', function() {
-  console.log('Have a great day!');
-  process.exit(0);
-});
-	
-var connect = function() {
-	client = net.connect(8124, "192.168.1.66", function() { //'connect' listener
-		console.log('connected to chat server');
-	}).on('connect', function() {
-		this.write(username + ' connected');
-	}).on('data', function(data) {
+var server = net.createServer(function(c) { //'connection' listener
+  console.log('server connected');
+	connections.push(c);
+	c.on('data', function(data) {
 		console.log(data.toString());
-	}).on('end', function() {
-		console.log('client disconnected');
+		for(var i in connections) if(connections[i] != c) connections[i].write(data.toString());
 	});
-}
+  c.on('end', function() {
+		connections.pop(c);
+    console.log('server disconnected');
+  }); 
+
+});
+server.listen(8124, "192.168.1.66", function() { //'listening' listener
+  console.log('server bound');
+});
